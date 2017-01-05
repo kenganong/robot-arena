@@ -1,0 +1,22 @@
+Special Rules (for special people)
+
+1. Do not share memory
+  Your robots are individuals and prefer to be treated as such. Do not write to memory in a place from which other
+  robots, even of the same type, read. Just use your personal memory dict.
+2. Do not raise exceptions
+  If a robot raises an exception when asked for a move, that robot will be considered to overheat, taking 1 damage.
+3. Do not actually overheat
+  Infinite loops, unbounded memory, or other such issues will cause the game manager to retroactively erase the
+  existence of offending robot types. Your robots are not Fixed Points and history will forget them.
+4. Do not break the fourth wall
+  Python is a hackable language, but please do not attempt have your robots discover more knowledge about the arena
+  or life outside than the API provides. Doing so would admit to being a machine and therefore against robot protocol.
+5. Write simply
+  Once your robot easily trashes all the others in the arena, the other contestants will be more amazed to find your
+  code elegant and simple than a complex beast they could never hope to understand.
+  There are many dangers and twists to the arena and it may be best to ignore some, moving with simple purpose. Feel
+  free to write concise strategies that may not have a chance to win.
+6. You may show discernment
+  When a robot examines their surroundings in the arena, they are able to see the names of other robots nearby. It is
+  acceptable to act differently to different robots such as attempting not to shoot robots with the particular names.
+  It is also acceptable to have one robot's purpose be to help a particular other robot to victory.

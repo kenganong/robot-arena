@@ -1,10 +1,11 @@
-SQUARE = 0
+RECTANGLE = 0
+SQUARE = 1
 
-def init_board(size, fill=' ', shape=SQUARE, infinite=False):
-  if shape==SQUARE and not infinite:
-    return SquareBoard(size, fill)
+def init_board(size, fill=' ', shape=RECTANGLE, cell_shape=SQUARE, infinite=False):
+  if shape == RECTANGLE and cell_shape == SQUARE and not infinite:
+    return RectangleSquareBoard(size, fill)
 
-class SquareBoard:
+class RectangleSquareBoard:
   def __init__(self, size, fill):
     self.rows = size[0]
     self.cols = size[1]
@@ -39,6 +40,8 @@ class SquareBoard:
     self.contents[pos[0]][pos[1]] = item
   def off_board(self, pos):
     return pos[0] < 0 or pos[0] >= self.rows or pos[1] < 0 or pos[1] >= self.cols
+  def traverse(self):
+    return ((self.contents[row][col], (row, col)) for col in range(self.cols) for row in range(self.rows))
   def get_surroundings(self, pos, distance):
     if self.off_board(pos):
       raise IndexError('Position out-of-bounds')
