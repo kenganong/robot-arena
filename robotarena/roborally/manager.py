@@ -1,3 +1,4 @@
+import random
 from roborally.constants import *
 import common.model.board as board_api
 
@@ -17,15 +18,85 @@ class GameState:
       cell.content = robot
       cell.facing = facing
 
+class Brain:
+  def __init__(self, name, module):
+    self.name = name
+    self.module = module
+
 class Robot:
   def __init__(self):
     self.life = 10
+    self.type = ROBOT
+
+class Wall:
+  def __init__(self):
+    self.life = 50
+    self.type = WALL
+
+class Laser:
+  def __init__(self):
+    self.life = 50
+    self.type = LASER
+
+class Flag:
+  def __init__(self, number):
+    self.number = number
+    self.type = FLAG
 
 def create_empty_state(size):
   return GameState(size)
 
+def create_state(board_file):
+  lines = [line.rstrip('\n') for line in board_file]
+  size = max(len(lines), max(len(line) for line in lines))
+  state = create_empty_state(size)
+  for row in range(len(lines)):
+    for col in range(len(lines[row])):
+      char = lines[row][col]
+      thing = None
+      floor = EMPTY
+      facing = NORTH
+      if char == '#':
+        thing = Wall()
+      elif char == '^':
+        thing = Laser()
+      elif char == 'v':
+        thing = Laser()
+        facing = SOUTH
+      elif char == '<':
+        thing = Laser()
+        facing = WEST
+      elif char == '>':
+        thing = Laser()
+        facing = EAST
+      elif char.isdigit():
+        floor = Flag(int(char))
+      cell = state.board.get_item((row, col))
+      cell.content = thing
+      cell.floor = floor
+      cell.facing = facing
+  return state
+
+def create_brain(name, module):
+  return Brain(name, module)
+
 def create_robot():
   return Robot()
+
+def place_robots(state, robot_brains):
+  robots = []
+  for brain in robot_brains:
+    for i in range(20):
+      robot = create_robot()
+      robot.brain = brain
+      robots.append(robot)
+  size = state.board.rows
+  places = random.sample(range(size ** 2), len(robots))
+  for robot, place in zip(robots, places):
+    pos = (int(place / size), place % size)
+    facing = random.choice(DIRECTIONS)
+    state.put_robot(pos, robot, facing)
+  state.robots = robots
 
 def get_pos_in_direction(pos, direction, distance=1):
   return tuple(x + y for x, y in zip(pos, tuple(distance * z for z in direction)))
