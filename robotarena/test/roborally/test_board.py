@@ -78,14 +78,14 @@ def test_robot_laser_crossfire(state):
   state.put_robot((4, 4), r5, SOUTH)
   laser_assertions(state, (r1, r2, r3, r4, r5), (10, 10, 10, 10, 10), (9, 8, 10, 10, 9))
 
-def test_open_board_file(test_state):
+def board_assertions(test_state):
   positions_seen = 0
   for cell, pos in test_state.board.traverse():
     row, col = pos
     positions_seen += 1
     if row == 19 or row == 20:
       if col < 5 or col >= 35:
-        assert cell.content == None
+        assert cell.content == None or cell.content.type == ROBOT
       elif col == 6 or col == 33:
         assert cell.content.type == LASER
         if row == 19:
@@ -96,7 +96,7 @@ def test_open_board_file(test_state):
         assert cell.content.type == WALL
     elif col == 19 or col == 20:
       if row < 5 or row >= 35:
-        assert cell.content == None
+        assert cell.content == None or cell.content.type == ROBOT
       elif row == 6 or row == 33:
         assert cell.content.type == LASER
         if col == 19:
@@ -122,8 +122,11 @@ def test_open_board_file(test_state):
       assert cell.floor.number == 5
     else:
       assert cell.floor == EMPTY
-      assert cell.content == None
+      assert cell.content == None or cell.content.type == ROBOT
   assert positions_seen == 1600
+
+def test_open_board_file(test_state):
+  board_assertions(test_state)
 
 def test_place_robots(test_state, robot_brains):
   manager.place_robots(test_state, robot_brains)
@@ -132,3 +135,4 @@ def test_place_robots(test_state, robot_brains):
     if cell.content != None and cell.content.type == ROBOT:
       robots_seen += 1
   assert robots_seen == 40
+  board_assertions(test_state) # Verify placing robots didn't destroy a wall

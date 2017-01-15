@@ -48,7 +48,7 @@ class RectangleBoard:
       if self.wrap == NONE:
         raise IndexError('Position out-of-bounds')
       else:
-        pos = self.wrap(pos)
+        pos = self.wrap_pos(pos)
     self.contents[pos[0]][pos[1]] = item
   def off_board(self, pos):
     return pos[0] < 0 or pos[0] >= self.rows or pos[1] < 0 or pos[1] >= self.cols

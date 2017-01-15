@@ -90,10 +90,9 @@ def place_robots(state, robot_brains):
       robot = create_robot()
       robot.brain = brain
       robots.append(robot)
-  size = state.board.rows
-  places = random.sample(range(size ** 2), len(robots))
-  for robot, place in zip(robots, places):
-    pos = (int(place / size), place % size)
+  empty_spaces = [pos for cell, pos in state.board.traverse() if cell.content == None]
+  places = random.sample(empty_spaces, len(robots))
+  for robot, pos in zip(robots, places):
     facing = random.choice(DIRECTIONS)
     state.put_robot(pos, robot, facing)
   state.robots = robots
