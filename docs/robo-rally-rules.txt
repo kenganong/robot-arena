@@ -1,4 +1,159 @@
-Special Rules (for special people)
+The factory robots are competing in a race. Flags have been set out and each robot will need to touch each flag in
+numerical order to win. Each robot is equipped with industrial grade lasers to make the race more interesting.
+
+In this Robot Arena, you control the robots on the factory floor and win by either one of your robots touching each
+of the numbered flags in order, or by being the last robot left alive. Armed with your laser, you can destroy anything
+in the arena that gets in your way, just don't take too many laser hits yourself!
+
+Robot Arena:
+  If you are new to robot arenas, this paragraph is for you! In robot arenas, I am designing a simple game supporting
+  lots of players. This game functions like board game (usually on a very large board) but is entirely virtual.
+  All the players are computer-controlled and you write the AI via simple scripts (usually small python modules).
+  You win if players controlled by your AI win. You don't have to play to win...maybe your AI just creates havoc.
+  As the game master, I will run the official game. However, I am sharing all of my code to run the game as well as all
+  the AI submissions by other contributors, so you can run your own simulations to test your AI or just for fun.
+
+Submission:
+  What I need from YOU are two AI submissions, a single python file each which will act as the AI for robots.
+  Along with your python file, please provide a pithy name for your AI and a short description of its strategy.
+  I need your first submission by <TODO: date>. Just respond to this email with your python file attached.
+  On <TODO: date>, I will share everyone's first submission to the group.
+  I need your second submission by <TODO: date>. You can borrow ideas from other people's first submissions.
+  On <TODO: date>, I will run the official game and report the results (hopefully with fancy replays--TBD)
+  Please ask any questions not answered in the following rules and descriptions.
+
+Order of the Match:
+  1. An arena designed by the game master is created.
+  2. 40 robots of each robot type will be created and added to random locations in the arena.
+  3. Turns are taken until an end-game situation is reached
+     A: A robot has touched all 8 flags in order
+     B: Only 1 robot type survives
+     C: All robots have died
+  4. The winner and runner-up are determined.
+
+Order of the Turn:
+  1. All active robots decide their moves
+  2. All robots with priority moves perform their moves
+  3. All active robots with laser moves fire their lasers
+  4. All active robots perform normal moves
+  5. All spinners turn
+  6. All active robots and mounted lasers fire their lasers
+  7. Any active robot on top of their next flag score the flag
+  8. Every 10th turn, robots receive a charge counter
+  9. Check for end-game situation
+
+Arena:
+  The arena is square-shaped with square tiles. The arena is surrounded by pits.
+  The arena that will be used during the official game is secret and to be designed by the game master. However, there
+  are example arena maps available in the maps directory (TODO: link to this on github).
+  Since there are 40 copies of each robot type, the arena will be very large. You can expect that around 5% to 6% of
+  the arena will be populated with robots at the beginning.
+  Each square of the arena has a floor (which can be empty, a spinner, a flag, or a pit) and content (which can be
+  empty, a robot, a robot corpse, a mounted laser, or a wall).
+  When reading maps, these are the symbols and what they mean:
+  * <space> - Empty
+  * <number> - A flag with that number of it
+  * # - A wall
+  * <,>,^,v - A mounted laser which fires in one of the four directions.
+  * {,} - A spinner which turns either clockwise or counter-clockwise
+  * & - A pit
+  Feel free to design your own maps when testing your AI.
+  No robot can see the entire arena all the time. Robots can only see an 11x11 square around themselves (5 tiles away
+  in each direction).
+
+Lasers:
+  Robots and Mounted Lasers fire a laser each turn. When a laser is fired, it will hit the first Robot, Robot Corpse,
+  Wall, or Mounted Laser it encounters in the direction it was fired dealing its target 1 damage. Lasers have infinite
+  range and can therefore hit a robot even if the robot cannot see the source of the laser.
+
+Pits:
+  Pits are represented by a floor of None. Anything that enters a pit square falls into the pit and is gone forever.
+
+Walls:
+  Walls are impassable and cannot be pushed. A robot that moves into a wall, will bounce back and not move.
+  Walls have 50 life and can therefore be shot with lasers until they crumble into nothing.
+
+Mounted Lasers:
+  Mounted Lasers are basically walls that fire lasers. They are impassable and cannot be pushed. Each Mounted Laser
+  fires its laser in exactly one direction.
+  Mounted Lasers have 50 life and can be shot with lasers until they crumble into nothing.
+
+Spinners:
+  When spinners activate, they turn any robot on top of the spinner 90 degrees. When looking down at the arena, the
+  LEFT_SPINNER turns counter-clockwise and the RIGHT_SPINNER turns clockwise.
+  Spinners are a floor element and are immovable and indestructible.
+
+Flags:
+  There are a total of 8 flags in the arena and each has a number associated with it. Robots are awarded a flag only
+  if they have already touched all previously numbered flags. To be awarded a flag, a robot must end the turn on the
+  flag tile, this means that each turn a maximum of one robot can be awarded each flag.
+  Robots can only see the next flag, all other flags (including previous flags) are invisible to that robot.
+  Robots can always sense the direction the next flag is in, even if it is outside their sight range.
+  Flags are a floor element and are immovable and indestructible.
+
+Corpses:
+  After a robot has taken 10 or more damage, they deactivate and become a corpse.
+  Corpses can be pushed by robots. They do not fire lasers or move aside from being pushed.
+  Corpses start with 10 life. After taking 10 or more damage, they explode dealing 1 damage to everything in the
+  8 adjacent tiles. After exploding, the corpse no longer exists on the arena.
+
+Robots:
+  Robots are the players in the game. There are 40 robots of each robot type, meaning each AI controls 40 robots.
+  Robots have the following attributes:
+  * life - Each robot starts with 10 life.
+  * flags - The number of flags the robot has scored.
+  * charges - The number of charges the robot currently has. Each robot starts with 1 charge.
+              Charges allow robots to use priority moves without taking damage.
+  * name - The pithy name for the AI controlling the robot.
+  * facing - The direction the robot is facing.
+  * memory - This robot's memory as populated by its AI.
+  Your AI will have access to all of this information for your robot when deciding the robot's move. However, other
+  robots you see will only have life, name, and facing available to you.
+
+Moves:
+  Each turn, every active robot chooses one move to make.
+  Normal moves:
+  * FORWARD - your robot moves forward one tile.
+  * REVERSE - your robot moves backward one tile.
+  * TURN_LEFT - your robot turns counter-clockwise 90 degrees.
+  * TURN_RIGHT - your robot turns clockwise 90 degrees.
+  * U_TURN - your robot turns 180 degrees.
+  Attack moves:
+  Attack moves happen before all normal moves and can therefore be used to hit a robot before it moves.
+  * Laser - your robot fires its laser instead of moving. This will cause your robot to fire its laser twice during the
+            turn; once before normal moves and once after all moves.
+  Priority moves:
+  Priority moves happen before all attack and normal moves which means they can be used to dodge attack moves.
+  Performing a priority move will use 1 charge. If your robot has no charges left, it will take 1 damage.
+  * FORWARD_TWO - your robot moves forward two tiles. This move will not 'jump' over anything.
+  * SIDESTEP_LEFT - your robot moves one tile to its left without turning.
+  * SIDESTEP_RIGHT - your robot moves one tile to its right without turning.
+  When two or more robots would move onto the same tile or otherwise conflict with one another, the robots will perform
+  their moves in a random order.
+
+Sight:
+  Your robot's sight is represented as a list of lists, 11 rows and 11 columns fill with cell objects each with two
+  attributes, 'floor' and 'content'. Your robot will always be in the center (5, 5) of your sight.
+  cell.floor will contain one of the following constants (from roborally/api.py)
+  * PIT - A pit. This constant is equal to None.
+  * EMPTY - No floor element present. There may still be content.
+  * LEFT_SPINNER - A counter-clockwise spinner.
+  * RIGHT_SPINNER - A clockwise spinner.
+  * FLAG - Your robot's next flag.
+  cell.content will contain either None or a dict with the following keys:
+  * 'type' - One of the constants (from roborally/api), WALL, MOUNTED_LASER, CORPSE, ROBOT
+  * 'position' - A coordinate tuple in your sight.
+  * 'life' - Remaining life.
+  * 'facing' - One of the constants (from roborally/api), AHEAD, BEHIND, LEFT, RIGHT representing the direction the
+               Robot or Mounted Laser is pointing relative to your robot. Meaningless for Walls and Corpses.
+  * 'name' - Pithy name for the AI controlling the Robot. Meaningless for non-Robots.
+  * 'flags' - Only available for your robot. Number of flags your robot has scored.
+  * 'charges' - Only available for your robot. Number of charges your robot has.
+  * 'memory' - Only available for your robot. A dict representing your robot's memory. Nothing is automatically entered
+               into this dict. Your AI controls its entries.
+  * 'sense' - Only available for your robot. A list of directions toward your robot's next flag.
+
+Special Rules (for special people):
 
 1. Do not share memory
   Your robots are individuals and prefer to be treated as such. Do not write to memory in a place from which other

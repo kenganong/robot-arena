@@ -1,82 +1,34 @@
 import os
 import random
 import pytest
-from roborally.constants import *
-import roborally.manager as manager
+from roborally.api import *
+import roborally.game_state as game_state
 
 @pytest.fixture
-def state():
-  return manager.create_empty_state(8)
-
-@pytest.fixture
-def test_state():
+def no_brain_state():
   file_name = os.path.join(os.path.dirname(__file__), 'test_board_1.txt')
   with open(file_name, 'r') as board_file:
-    return manager.create_state(board_file)
+    return game_state.create_state(board_file, [])
 
 @pytest.fixture
 def robot_brains():
   brains = []
   class Stand:
     def get_move():
-      return SHOOT
+      return LASER
   class RandomBot:
     def get_move():
       return random.choice(MOVES)
-  brains.append(manager.create_brain('Stand', Stand()))
-  brains.append(manager.create_brain('Random', RandomBot()))
+  brains.append(game_state.Brain('Stand', Stand()))
+  brains.append(game_state.Brain('Random', RandomBot()))
   return brains
 
-def laser_assertions(state, items, before_life, after_life):
-  for i in range(len(items)):
-    assert items[i].life == before_life[i]
-  manager.perform_lasers(state)
-  for i in range(len(items)):
-    assert items[i].life == after_life[i]
-
-def test_get_pos_in_direction():
-  assert manager.get_pos_in_direction((6, 3), NORTH) == (5, 3)
-  assert manager.get_pos_in_direction((6, 3), NORTH, 3) == (3, 3)
-  assert manager.get_pos_in_direction((6, 3), EAST) == (6, 4)
-  assert manager.get_pos_in_direction((6, 3), EAST, 3) == (6, 6)
-  assert manager.get_pos_in_direction((6, 3), SOUTH) == (7, 3)
-  assert manager.get_pos_in_direction((6, 3), SOUTH, 3) == (9, 3)
-  assert manager.get_pos_in_direction((6, 3), WEST) == (6, 2)
-  assert manager.get_pos_in_direction((6, 3), WEST, 3) == (6, 0)
-
-def test_robot_laser_immediate(state):
-  robot_shooter = manager.create_robot()
-  robot_shot = manager.create_robot()
-  state.put_robot((6, 3), robot_shooter, NORTH)
-  state.put_robot((5, 3), robot_shot, WEST)
-  laser_assertions(state, (robot_shooter, robot_shot), (10, 10), (10, 9))
-
-def test_robot_laser_nearby(state):
-  robot_shooter = manager.create_robot()
-  robot_shot = manager.create_robot()
-  state.put_robot((6, 3), robot_shooter, NORTH)
-  state.put_robot((4, 3), robot_shot, WEST)
-  laser_assertions(state, (robot_shooter, robot_shot), (10, 10), (10, 9))
-
-def test_robot_laser_far(state):
-  robot_shooter = manager.create_robot()
-  robot_shot = manager.create_robot()
-  state.put_robot((7, 3), robot_shooter, NORTH)
-  state.put_robot((0, 3), robot_shot, WEST)
-  laser_assertions(state, (robot_shooter, robot_shot), (10, 10), (10, 9))
-
-def test_robot_laser_crossfire(state):
-  r1 = manager.create_robot()
-  r2 = manager.create_robot()
-  r3 = manager.create_robot()
-  r4 = manager.create_robot()
-  r5 = manager.create_robot()
-  state.put_robot((6, 3), r1, NORTH)
-  state.put_robot((5, 3), r2, SOUTH)
-  state.put_robot((3, 3), r3, SOUTH)
-  state.put_robot((4, 2), r4, EAST)
-  state.put_robot((4, 4), r5, SOUTH)
-  laser_assertions(state, (r1, r2, r3, r4, r5), (10, 10, 10, 10, 10), (9, 8, 10, 10, 9))
+@pytest.fixture
+def brain_state():
+  brains = robot_brains()
+  file_name = os.path.join(os.path.dirname(__file__), 'test_board_1.txt')
+  with open(file_name, 'r') as board_file:
+    return game_state.create_state(board_file, brains)
 
 def board_assertions(test_state):
   positions_seen = 0
@@ -85,54 +37,59 @@ def board_assertions(test_state):
     positions_seen += 1
     if row == 19 or row == 20:
       if col < 5 or col >= 35:
-        assert cell.content == None or cell.content.type == ROBOT
+        assert cell.content == None or cell.content[TYPE] == ROBOT
       elif col == 6 or col == 33:
-        assert cell.content.type == LASER
+        assert cell.content[TYPE] == MOUNTED_LASER
         if row == 19:
-          assert cell.facing == NORTH
+          assert cell.content[FACING] == game_state.NORTH
         else:
-          assert cell.facing == SOUTH
+          assert cell.content[FACING] == game_state.SOUTH
       else:
-        assert cell.content.type == WALL
+        assert cell.content[TYPE] == WALL
     elif col == 19 or col == 20:
       if row < 5 or row >= 35:
-        assert cell.content == None or cell.content.type == ROBOT
+        assert cell.content == None or cell.content[TYPE] == ROBOT
       elif row == 6 or row == 33:
-        assert cell.content.type == LASER
+        assert cell.content[TYPE] == MOUNTED_LASER
         if col == 19:
-          assert cell.facing == WEST
+          assert cell.content[FACING] == game_state.WEST
         else:
-          assert cell.facing == EAST
+          assert cell.content[FACING] == game_state.EAST
       else:
-        assert cell.content.type == WALL
+        assert cell.content[TYPE] == WALL
     elif row == 9 and col == 25:
-      assert cell.floor.type == FLAG
-      assert cell.floor.number == 1
+      assert cell.floor.startswith(FLAG)
+      assert int(cell.floor[len(FLAG):]) == 1
     elif row == 25 and col == 25:
-      assert cell.floor.type == FLAG
-      assert cell.floor.number == 2
+      assert cell.floor.startswith(FLAG)
+      assert int(cell.floor[len(FLAG):]) == 2
     elif row == 14 and col == 13:
-      assert cell.floor.type == FLAG
-      assert cell.floor.number == 3
+      assert cell.floor.startswith(FLAG)
+      assert int(cell.floor[len(FLAG):]) == 3
     elif row == 26 and col == 13:
-      assert cell.floor.type == FLAG
-      assert cell.floor.number == 4
+      assert cell.floor.startswith(FLAG)
+      assert int(cell.floor[len(FLAG):]) == 4
     elif row == 16 and col == 28:
-      assert cell.floor.type == FLAG
-      assert cell.floor.number == 5
+      assert cell.floor.startswith(FLAG)
+      assert int(cell.floor[len(FLAG):]) == 5
     else:
       assert cell.floor == EMPTY
-      assert cell.content == None or cell.content.type == ROBOT
+      assert cell.content == None or cell.content[TYPE] == ROBOT
   assert positions_seen == 1600
+  assert test_state.flags[0] == (9, 25)
+  assert test_state.flags[1] == (25, 25)
+  assert test_state.flags[2] == (14, 13)
+  assert test_state.flags[3] == (26, 13)
+  assert test_state.flags[4] == (16, 28)
 
-def test_open_board_file(test_state):
-  board_assertions(test_state)
+def test_open_board_file(no_brain_state):
+  board_assertions(no_brain_state)
 
-def test_place_robots(test_state, robot_brains):
-  manager.place_robots(test_state, robot_brains)
+def test_place_robots(brain_state):
+  assert len(brain_state.brains) == 2
   robots_seen = 0
-  for cell, pos in test_state.board.traverse():
-    if cell.content != None and cell.content.type == ROBOT:
+  for cell, pos in brain_state.board.traverse():
+    if cell.content != None and cell.content[TYPE] == ROBOT:
       robots_seen += 1
-  assert robots_seen == 40
-  board_assertions(test_state) # Verify placing robots didn't destroy a wall
+  assert robots_seen == 2 * game_state.NUM_ROBOTS_PER_BRAIN
+  board_assertions(brain_state) # Verify placing robots didn't destroy a wall
