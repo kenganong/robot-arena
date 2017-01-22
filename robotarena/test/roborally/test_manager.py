@@ -315,3 +315,16 @@ def test_robot_laser_crossfire(state, brains):
   r4 = put_robot(state, brains['Stand'], EAST, (4, 2))
   r5 = put_robot(state, brains['Stand'], SOUTH, (4, 4))
   laser_assertions(state, (r1, r2, r3, r4, r5), (10, 10, 10, 10, 10), (9, 8, 10, 10, 9))
+
+def test_end_state(state, brains):
+  assert manager.end_state(state)
+  r1 = put_robot(state, brains['Stand'], NORTH, (6, 3))
+  assert manager.end_state(state)
+  r2 = put_robot(state, brains['Stand'], SOUTH, (5, 3))
+  assert manager.end_state(state)
+  r3 = put_robot(state, brains['Random'], SOUTH, (3, 3))
+  assert not manager.end_state(state)
+  r2[FLAGS_SCORED] = 7
+  assert not manager.end_state(state)
+  r3[FLAGS_SCORED] = 8
+  assert manager.end_state(state)

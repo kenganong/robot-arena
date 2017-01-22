@@ -1,4 +1,5 @@
 import random
+import roborally.config as config
 from roborally.api import *
 from roborally.game_state import *
 
@@ -13,9 +14,18 @@ def create_start_state():
     def move(self):
       return random.choice(MOVES)
   brains = [Brain('Thomas', RandomBot()), Brain('Wendy', RandomBot()), Brain('Steve', Stand())]
-  with open('roborally/example_board.txt') as board_file:
+  with open(config.map_file) as board_file:
     state = create_state(board_file, brains)
   return state
+
+def end_state(state):
+  names = set()
+  for cell, pos in state.board.traverse():
+    if cell.content and cell.content[TYPE] == ROBOT:
+      if cell.content[FLAGS_SCORED] == NUM_FLAGS:
+        return True
+      names.add(cell.content['brain'].name)
+  return len(names) <= 1
 
 def next_iteration(state):
   record_moves_for_robots(state)

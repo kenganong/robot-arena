@@ -84,7 +84,9 @@ class RoboRallyGameState:
               retval += '↓'
             retval += cell.content['brain'].name[0] + ' '
         else:
-          if cell.floor == EMPTY:
+          if cell.floor == None:
+            retval += ' & '
+          elif cell.floor == EMPTY:
             retval += ' · '
           elif cell.floor == LEFT_SPINNER:
             retval += ' { '
@@ -131,6 +133,8 @@ def create_state(board_file, brains):
         cell.content = make_mounted(SOUTH)
       elif char == '^':
         cell.content = make_mounted(NORTH)
+      elif char == '&':
+        cell.floor = None
       elif char == '{':
         cell.floor = LEFT_SPINNER
       elif char == '}':
