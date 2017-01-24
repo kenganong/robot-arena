@@ -1,19 +1,24 @@
 import random
 import roborally.config as config
+import roborally.robots.hammer_bot as hammer_bot
+import roborally.robots.beeline as beeline
 from roborally.api import *
 from roborally.game_state import *
 
 ROBOT_SIGHT_RANGE = 5
 
 def create_start_state():
-  import roborally.random_bot as random_bot
   class Stand:
     def move(self):
       return LASER
   class RandomBot:
     def move(self):
       return random.choice(MOVES)
-  brains = [Brain('Thomas', RandomBot()), Brain('Wendy', RandomBot()), Brain('Steve', Stand())]
+  brains = [Brain('HammerBot', hammer_bot), Brain('Beeline', beeline), Brain('Thomas', RandomBot()), Brain('Wendy', beeline),
+            Brain('HammerBot2', hammer_bot), Brain('Beeline2', beeline), Brain('Bob', RandomBot()), Brain('Adam', beeline),
+            Brain('HammerBot3', hammer_bot), Brain('Beeline3', beeline), Brain('Jill', RandomBot()), Brain('Cecil', beeline),
+            Brain('HammerBot4', hammer_bot), Brain('Beeline4', beeline), Brain('Mary', RandomBot()), Brain('Dave', Stand())]
+  #brains = [Brain('HammerBot', hammer_bot), Brain('Beeline', beeline)]
   with open(config.map_file) as board_file:
     state = create_state(board_file, brains)
   return state
@@ -36,6 +41,8 @@ def next_iteration(state):
   perform_moves(state)
   perform_spinners(state)
   perform_lasers(state)
+  handle_destroyed(state)
+  perform_random_damage(state)
   handle_destroyed(state)
   handle_flags(state)
   charge_up(state)
@@ -92,7 +99,8 @@ def get_robot_sight(state, pos, robot):
             sight_cell.content[FLAGS_SCORED] = cell.content[FLAGS_SCORED]
             sight_cell.content[CHARGES] = cell.content[CHARGES]
             sight_cell.content[MEMORY] = cell.content[MEMORY]
-            sight_cell.content[FLAG_SENSE] = direction(pos, state.flags[cell.content[FLAGS_SCORED]])
+            sight_cell.content[FLAG_SENSE] = [convert_direction(cell.content[FACING], d)
+                    for d in direction(pos, state.flags[cell.content[FLAGS_SCORED]])]
       else:
         sight_cell.floor = None
         sight_cell.content = None
@@ -183,7 +191,7 @@ def perform_move_in_direction(state, pos, direction, other_positions):
     robot = state.board.get_item(pos).content
     state.board.get_item(pos).content = None
     cell = state.board.get_item(pos_in_front)
-    if cell:
+    if cell and cell.floor:
       cell.content = robot
       return pos_in_front
     else:
@@ -211,6 +219,19 @@ def fire_laser(state, pos, direction):
       if cell.content[LIFE] == 0:
         record_death(cell.content, 'lasers')
       break
+
+def perform_random_damage(state):
+  if state.iteration >= 100 and state.iteration % 20 == 0:
+    damage_amount = (state.iteration - 100) / 20
+    living_bots = []
+    for cell, pos in state.board.traverse():
+      if cell.content and cell.content[TYPE] == ROBOT:
+        living_bots.append(cell.content)
+    if living_bots:
+      robot = random.choice(living_bots)
+      robot[LIFE] -= damage_amount
+      if robot[LIFE] < 0:
+        record_death(robot, 'random damage')
 
 def handle_destroyed(state):
   to_fill_with_corpses = []

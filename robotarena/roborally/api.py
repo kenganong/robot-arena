@@ -101,6 +101,36 @@ def mounted():
 def pit():
   pass # TODO: get all pits in sight
 
+def static_vars(**kwargs):
+  def decorate(func):
+    for k in kwargs:
+      setattr(func, k, kwargs[k])
+    return func
+  return decorate
+
+MOVES = [LASER, FORWARD, FORWARD_TWO, REVERSE, SIDESTEP_LEFT, SIDESTEP_RIGHT, TURN_LEFT, TURN_RIGHT, U_TURN]
+@static_vars(move_map = {LASER: LASER, FORWARD: REVERSE, FORWARD_TWO: REVERSE, REVERSE: FORWARD,
+                         SIDESTEP_LEFT: SIDESTEP_RIGHT, SIDESTEP_RIGHT: SIDESTEP_LEFT,
+                         TURN_LEFT: TURN_RIGHT, TURN_RIGHT: TURN_LEFT, U_TURN: U_TURN})
+def opposite_move(move):
+  if move not in opposite_move.move_map:
+    return None
+  return opposite_move.move_map[move]
+
+@static_vars(direction_map = {AHEAD: [FORWARD, FORWARD_TWO], BEHIND: [U_TURN, REVERSE], LEFT: [TURN_LEFT, SIDESTEP_LEFT], RIGHT: [TURN_RIGHT, SIDESTEP_RIGHT]})
+def moves_in_direction(direction, potential_moves=None):
+  if not potential_moves:
+    potential_moves = MOVES
+  if direction not in moves_in_direction.direction_map:
+    return []
+  return [move for move in potential_moves if move in moves_in_direction.direction_map[direction]]
+
+def moves_in_directions(directions, potential_moves=None):
+  moves_toward = []
+  for direction in directions:
+    moves_toward.extend(moves_in_direction(direction, potential_moves))
+  return moves_toward
+
 def get_pos_in_direction(pos, direction, distance=1):
   return tuple(x + y for x, y in zip(pos, tuple(distance * z for z in direction)))
 
