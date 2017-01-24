@@ -1,3 +1,4 @@
+from copy import deepcopy
 import random
 import common.model.board as board_api
 from roborally.api import *
@@ -16,6 +17,19 @@ class Cell:
   def __init__(self):
     self.floor = EMPTY
     self.content = None
+  def __deepcopy__(self, memo):
+    cls = self.__class__
+    result = cls.__new__(cls)
+    memo[id(self)] = result
+    result.floor = deepcopy(self.floor, memo)
+    if self.content == None:
+      result.content = None
+    else:
+      result.content = dict()
+      for k, v in self.content.items():
+        if k not in ['move', MEMORY]:
+          result.content[k] = deepcopy(v, memo)
+    return result
 
 def make_content(type, life):
   return {TYPE: type, LIFE: life}
@@ -46,13 +60,23 @@ class Brain:
     self.ai = ai
     self.robots_alive = 0
     self.most_flags = 0
+  def __deepcopy__(self, memo):
+    cls = self.__class__
+    result = cls.__new__(cls)
+    memo[id(self)] = result
+    for k, v in self.__dict__.items():
+      if k != 'ai': # Don't copy the ai
+        setattr(result, k, deepcopy(v, memo))
+    return result
 
 class RoboRallyGameState:
   def __init__(self, size):
-    self.board = board_api.init_board((size, size), lambda: Cell())
+    self.board = board_api.init_board((size, size), self.my_empty)
     self.iteration = 0
     self.brains = []
     self.flags = [(0, 0)] * NUM_FLAGS
+  def my_empty(self):
+    return Cell()
   def __str__(self):
     retval = '\nIteration: {}'.format(self.iteration)
     for row in range(self.board.rows):
