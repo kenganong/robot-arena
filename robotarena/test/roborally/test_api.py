@@ -376,6 +376,10 @@ def test_shot_by():
   assert len(shooters) == 1
   assert shooters[0][api.NAME] == 'Mary'
   assert shooters[0][api.POSITION] == (5, 9)
+  shooters = api.shot_by(api.TURN_LEFT)
+  assert len(shooters) == 1
+  assert shooters[0][api.NAME] == 'Mary'
+  assert shooters[0][api.POSITION] == (5, 9)
   shooters = api.shot_by(api.SIDESTEP_LEFT)
   assert len(shooters) == 1
   assert shooters[0][api.NAME] == 'Mary'

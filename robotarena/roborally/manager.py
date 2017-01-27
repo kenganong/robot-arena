@@ -1,3 +1,5 @@
+import os
+import importlib.util
 import random
 import roborally.config as config
 import roborally.robots.hammer_bot as hammer_bot
@@ -8,20 +10,24 @@ from roborally.game_state import *
 ROBOT_SIGHT_RANGE = 5
 
 def create_start_state():
-  class Stand:
-    def move(self):
-      return LASER
-  class RandomBot:
-    def move(self):
-      return random.choice(MOVES)
-  brains = [Brain('HammerBot', hammer_bot), Brain('Beeline', beeline), Brain('Thomas', RandomBot()), Brain('Wendy', beeline),
-            Brain('HammerBot2', hammer_bot), Brain('Beeline2', beeline), Brain('Bob', RandomBot()), Brain('Adam', beeline),
-            Brain('HammerBot3', hammer_bot), Brain('Beeline3', beeline), Brain('Jill', RandomBot()), Brain('Cecil', beeline),
-            Brain('HammerBot4', hammer_bot), Brain('Beeline4', beeline), Brain('Mary', RandomBot()), Brain('Dave', Stand())]
-  #brains = [Brain('HammerBot', hammer_bot), Brain('Beeline', beeline)]
+  brains = load_brains()
   with open(config.map_file) as board_file:
     state = create_state(board_file, brains)
   return state
+
+def load_brains():
+  brains = []
+  brains_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'robots')
+  robots = getattr(config, 'robots', None)
+  if not robots:
+    robots = [(file_name[:-3], file_name[:-3]) for file_name in os.listdir(brains_dir) if file_name.endswith('.py') and not file_name.startswith('__')]
+  for bot in robots:
+    module_path = os.path.join(brains_dir, bot[1] + '.py')
+    spec = importlib.util.spec_from_file_location(bot[1], module_path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    brains.append(Brain(bot[0], module))
+  return brains
 
 def end_state(state):
   names = set()
@@ -55,8 +61,10 @@ def record_moves_for_robots(state):
       robot = cell.content
       api.SIGHT = get_robot_sight(state, pos, robot)
       try:
-        robot['move'] = robot['brain'].ai.move() # TODO: send information to robot
-      except:
+        robot['move'] = robot['brain'].ai.move()
+      except Exception as error:
+        if config.debug_robots:
+          raise error
         robot[LIFE] -= 1
         if robot[LIFE] == 0:
           record_death(robot, 'overheating')
@@ -66,11 +74,19 @@ def record_moves_for_robots(state):
 
 def get_robot_sight(state, pos, robot):
   surroundings = state.board.get_surroundings(pos, ROBOT_SIGHT_RANGE)
+  size = len(surroundings)
   sight = []
-  for row in range(len(surroundings)):
+  for row in range(size):
     sight_row = []
-    for col in range(len(surroundings[row])):
-      cell = surroundings[row][col]
+    for col in range(size):
+      if robot[FACING] == NORTH:
+        cell = surroundings[row][col]
+      elif robot[FACING] == WEST:
+        cell = surroundings[size - col - 1][row]
+      if robot[FACING] == SOUTH:
+        cell = surroundings[size - row - 1][size - col - 1]
+      if robot[FACING] == EAST:
+        cell = surroundings[col][size - row - 1]
       sight_cell= Cell()
       if cell:
         if cell.floor and cell.floor.startswith(FLAG):
@@ -88,7 +104,7 @@ def get_robot_sight(state, pos, robot):
           sight_cell.content[POSITION] = (row, col)
           sight_cell.content[LIFE] = cell.content[LIFE]
           if FACING in cell.content:
-            sight_cell.content[FACING] = convert_direction(cell.content[FACING], robot[FACING])
+            sight_cell.content[FACING] = convert_direction(robot[FACING], cell.content[FACING])
           else:
             sight_cell.content[FACING] = NORTH
           if cell.content[TYPE] == ROBOT:
@@ -99,7 +115,7 @@ def get_robot_sight(state, pos, robot):
             sight_cell.content[FLAGS_SCORED] = cell.content[FLAGS_SCORED]
             sight_cell.content[CHARGES] = cell.content[CHARGES]
             sight_cell.content[MEMORY] = cell.content[MEMORY]
-            sight_cell.content[FLAG_SENSE] = [convert_direction(cell.content[FACING], d)
+            sight_cell.content[FLAG_SENSE] = [convert_direction(robot[FACING], d)
                     for d in direction_toward(pos, state.flags[cell.content[FLAGS_SCORED]])]
       else:
         sight_cell.floor = None

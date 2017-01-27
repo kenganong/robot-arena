@@ -1,5 +1,8 @@
-map_file = 'roborally/maps/tricky_flags.txt'
-#map_file = 'roborally/maps/example_board.txt'
+#map_file = 'roborally/maps/tricky_flags.txt'
+map_file = 'roborally/maps/example_board.txt'
 save_replay = True
 replay_name = 'my_test'
 iteractive = True
+debug_robots = False
+robots = [('HammerBot', 'hammer_bot'), ('Beeline', 'beeline'),
+          ('ScaredyCat', 'scaredycat'), ('McShooterson', 'mcshooterson')]

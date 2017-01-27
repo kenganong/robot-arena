@@ -4,7 +4,7 @@ import common.model.board as board_api
 from roborally.api import *
 
 NUM_FLAGS = 8
-NUM_ROBOTS_PER_BRAIN = 40
+NUM_ROBOTS_PER_BRAIN = 30
 
 NORTH = AHEAD
 EAST = RIGHT
@@ -83,42 +83,8 @@ class RoboRallyGameState:
       retval += '\n'
       for col in range(self.board.cols):
         cell = self.board.get_item((row, col))
-        if cell.content:
-          if cell.content[TYPE] == WALL:
-            retval += ' # '
-          elif cell.content[TYPE] == CORPSE:
-            retval += ' / '
-          elif cell.content[TYPE] == MOUNTED_LASER:
-            if cell.content[FACING] == NORTH:
-              retval += ' ^ '
-            elif cell.content[FACING] == WEST:
-              retval += ' < '
-            elif cell.content[FACING] == EAST:
-              retval += ' > '
-            elif cell.content[FACING] == SOUTH:
-              retval += ' v '
-          elif cell.content[TYPE] == ROBOT:
-            if cell.content[FACING] == NORTH:
-              retval += '↑'
-            elif cell.content[FACING] == WEST:
-              retval += '←'
-            elif cell.content[FACING] == EAST:
-              retval += '→'
-            elif cell.content[FACING] == SOUTH:
-              retval += '↓'
-            retval += cell.content['brain'].name[0] + ' '
-        else:
-          if cell.floor == None:
-            retval += ' & '
-          elif cell.floor == EMPTY:
-            retval += ' · '
-          elif cell.floor == LEFT_SPINNER:
-            retval += ' { '
-          elif cell.floor == RIGHT_SPINNER:
-            retval += ' } '
-          elif cell.floor.startswith(FLAG):
-            retval += ' {} '.format(cell.floor[len(FLAG)])
-      self.calculate_statistics()
+        retval += str_cell(cell)
+    self.calculate_statistics()
     for brain in self.brains:
       retval += '\n{} - living robots = {}   most_flags = {}'.format(brain.name, brain.robots_alive, brain.most_flags)
     return retval
@@ -138,6 +104,49 @@ class RoboRallyGameState:
         brain.robots_alive += 1
         if brain.most_flags < cell.content[FLAGS_SCORED]:
           brain.most_flags = cell.content[FLAGS_SCORED]
+
+def str_cell(cell):
+  if cell.content:
+    if cell.content[TYPE] == WALL:
+      return ' # '
+    elif cell.content[TYPE] == CORPSE:
+      return ' / '
+    elif cell.content[TYPE] == MOUNTED_LASER:
+      if cell.content[FACING] == NORTH:
+        return ' ^ '
+      elif cell.content[FACING] == WEST:
+        return ' < '
+      elif cell.content[FACING] == EAST:
+        return ' > '
+      elif cell.content[FACING] == SOUTH:
+        return ' v '
+    elif cell.content[TYPE] == ROBOT:
+      if cell.content[FACING] == NORTH:
+        retval = '↑'
+      elif cell.content[FACING] == WEST:
+        retval = '←'
+      elif cell.content[FACING] == EAST:
+        retval = '→'
+      elif cell.content[FACING] == SOUTH:
+        retval = '↓'
+      if 'brain' in cell.content:
+        return retval + cell.content['brain'].name[0] + ' '
+      else:
+        return retval + cell.content[NAME][0] + ' '
+  else:
+    if cell.floor == None:
+      return ' & '
+    elif cell.floor == EMPTY:
+      return ' · '
+    elif cell.floor == LEFT_SPINNER:
+      return ' { '
+    elif cell.floor == RIGHT_SPINNER:
+      return ' } '
+    elif cell.floor.startswith(FLAG):
+      if cell.floor == FLAG:
+        return ' ? '
+      else:
+        return ' {} '.format(cell.floor[len(FLAG)])
 
 def create_state(board_file, brains):
   lines = [line.rstrip('\n') for line in board_file]
