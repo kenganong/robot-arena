@@ -52,7 +52,7 @@ Arena:
   empty, a robot, a robot corpse, a mounted laser, or a wall).
   When reading maps, these are the symbols and what they mean:
   * <space> - Empty
-  * <number> - A flag with that number of it
+  * <number> - A flag with that number on it
   * # - A wall
   * <,>,^,v - A mounted laser which fires in one of the four directions.
   * {,} - A spinner which turns either clockwise or counter-clockwise
@@ -92,7 +92,7 @@ Flags:
   Flags are a floor element and are immovable and indestructible.
 
 Corpses:
-  After a robot has taken 10 or more damage, they deactivate and become a corpse.
+  After a robot has taken 10 or more damage, it deactivates and becomes a corpse.
   Corpses can be pushed by robots. They do not fire lasers or move aside from being pushed.
   Corpses start with 10 life. After taking 10 or more damage, they explode dealing 1 damage to everything in the
   8 adjacent tiles. After exploding, the corpse no longer exists on the arena.
@@ -173,5 +173,5 @@ Special Rules (for special people):
   free to write concise strategies that may not have a chance to win.
 6. You may show discernment
   When a robot examines their surroundings in the arena, they are able to see the names of other robots nearby. It is
-  acceptable to act differently to different robots such as attempting not to shoot robots with the particular names.
+  acceptable to act differently to different robots such as attempting not to shoot robots with particular names.
   It is also acceptable to have one robot's purpose be to help a particular other robot to victory.

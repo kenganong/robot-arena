@@ -100,7 +100,7 @@ def get_robot_sight(state, pos, robot):
             sight_cell.content[CHARGES] = cell.content[CHARGES]
             sight_cell.content[MEMORY] = cell.content[MEMORY]
             sight_cell.content[FLAG_SENSE] = [convert_direction(cell.content[FACING], d)
-                    for d in direction(pos, state.flags[cell.content[FLAGS_SCORED]])]
+                    for d in direction_toward(pos, state.flags[cell.content[FLAGS_SCORED]])]
       else:
         sight_cell.floor = None
         sight_cell.content = None
