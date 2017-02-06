@@ -1,8 +1,8 @@
-#map_file = 'roborally/maps/tricky_flags.txt'
-map_file = 'roborally/maps/example_board.txt'
+map_file = 'roborally/maps/maze.txt'
 save_replay = True
 replay_name = 'my_test'
-iteractive = True
+interactive = False
+print_results = False
 debug_robots = False
 robots = [('HammerBot', 'hammer_bot'), ('Beeline', 'beeline'),
           ('ScaredyCat', 'scaredycat'), ('McShooterson', 'mcshooterson')]

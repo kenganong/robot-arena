@@ -3,15 +3,15 @@ from roborally.api import *
 
 def move():
   my_moves = list(MOVES)
-  random.shuffle(my_moves) # This is used so we don't favor moves that appear first in MOVES
   scored_moves = {}
   for move in my_moves:
     scored_moves[move] = score(move)
-  return min(scored_moves, key=scored_moves.get)
+  min_score = min(scored_moves.values())
+  return random.choice([move for move in scored_moves if scored_moves[move] == min_score])
 def score(move):
   # Score the move based on how much damage the robot will take if it makes the move
   if falls_into_pit(move):
-    return 10
+    return 20
   else:
     move_score = len(shot_by(move))
     if move in PRIORITY_MOVES and charges() < 1:

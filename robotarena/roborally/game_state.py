@@ -3,7 +3,7 @@ import random
 import common.model.board as board_api
 from roborally.api import *
 
-NUM_FLAGS = 8
+NUM_FLAGS = 6
 NUM_ROBOTS_PER_BRAIN = 30
 
 NORTH = AHEAD
@@ -43,7 +43,7 @@ def make_mounted(facing):
   return content
 
 def make_robot(brain, facing):
-  content = make_content(ROBOT, 10)
+  content = make_content(ROBOT, 20)
   content[FACING] = facing
   content[CHARGES] = 1
   content[FLAGS_SCORED] = 0
@@ -59,7 +59,11 @@ class Brain:
     self.name = name
     self.ai = ai
     self.robots_alive = 0
-    self.most_flags = 0
+    self.total_flags = 0
+    self.max_flag = 0
+    self.death_reason = {}
+    self.iterations_survived = 0
+    self.placement = 0
   def __deepcopy__(self, memo):
     cls = self.__class__
     result = cls.__new__(cls)
@@ -84,9 +88,8 @@ class RoboRallyGameState:
       for col in range(self.board.cols):
         cell = self.board.get_item((row, col))
         retval += str_cell(cell)
-    self.calculate_statistics()
     for brain in self.brains:
-      retval += '\n{} - living robots = {}   most_flags = {}'.format(brain.name, brain.robots_alive, brain.most_flags)
+      retval += '\n{} - living robots = {}   total_flags = {}'.format(brain.name, brain.robots_alive, brain.total_flags)
     return retval
   def get_content(self, pos):
     cell = self.board.get_item(pos)
@@ -94,16 +97,13 @@ class RoboRallyGameState:
       return None
     return cell.content
   def calculate_statistics(self):
-    # TODO: test this method, and get better statistics
     for brain in self.brains:
       brain.robots_alive = 0
-      brain.most_flags = 0
     for cell, pos in self.board.traverse():
       if cell.content and cell.content[TYPE] == ROBOT:
         brain = cell.content['brain']
         brain.robots_alive += 1
-        if brain.most_flags < cell.content[FLAGS_SCORED]:
-          brain.most_flags = cell.content[FLAGS_SCORED]
+        brain.iterations_survived = self.iteration
 
 def str_cell(cell):
   if cell.content:
@@ -179,4 +179,5 @@ def create_state(board_file, brains):
   empty_cells = [cell for cell, pos in state.board.traverse() if not cell.content and cell.floor == EMPTY]
   for cell, brain in zip(random.sample(empty_cells, len(brains) * NUM_ROBOTS_PER_BRAIN), brains * NUM_ROBOTS_PER_BRAIN):
     cell.content = make_robot(brain, random.choice([NORTH, WEST, EAST, SOUTH]))
+  state.calculate_statistics()
   return state

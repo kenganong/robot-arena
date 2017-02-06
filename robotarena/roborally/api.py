@@ -99,6 +99,15 @@ def get_cell_in_sight(pos):
     return None
   return sight()[pos[0]][pos[1]]
 
+def flag_in_sight():
+  """Returns the position of the flag if it is within your sight. Otherwise returns None."""
+  my_sight = sight()
+  for row in range(len(my_sight)):
+    for col in range(len(my_sight[row])):
+      if my_sight[row][col].floor == FLAG:
+        return (row, col)
+  return None
+
 # This is a python recipe which allows functions to initialize static variables at the function scope.
 def _static_vars(**kwargs):
   def decorate(func):
@@ -145,6 +154,13 @@ def direction_of_move(move):
   if move not in direction_of_move.direction_map:
     return None
   return direction_of_move.direction_map[move]
+
+def distance_between(pos, other_pos=None):
+  """Return the distance between the two given positions.
+     If one position is given, the second will be the position of your robot."""
+  if other_pos == None:
+    other_pos = myself()[POSITION]
+  return abs(pos[0] - other_pos[0]) + abs(pos[1] - other_pos[1])
 
 def get_pos_in_direction(pos, direction, distance=1):
   """Returns the position (a tuple of the form (row, col)) in the given direction from the given position.

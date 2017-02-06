@@ -8,6 +8,9 @@ from roborally.api import *
 from roborally.game_state import *
 
 ROBOT_SIGHT_RANGE = 5
+LIFE_GAIN_PER_FLAG = 10
+RANDOM_DAMAGE_START = 300
+RANDOM_DAMAGE_CYCLE = 30
 
 def create_start_state():
   brains = load_brains()
@@ -30,13 +33,37 @@ def load_brains():
   return brains
 
 def end_state(state):
-  names = set()
-  for cell, pos in state.board.traverse():
-    if cell.content and cell.content[TYPE] == ROBOT:
-      if cell.content[FLAGS_SCORED] == NUM_FLAGS:
-        return True
-      names.add(cell.content['brain'].name)
-  return len(names) <= 1
+  brains_alive = len([brain for brain in state.brains if brain.robots_alive > 0])
+  most_flags = sorted(state.brains, reverse=True,
+          key = lambda x: (x.max_flag, x.total_flags, x.iterations_survived, x.robots_alive))
+  if brains_alive > 1 and most_flags[0].max_flag < NUM_FLAGS:
+    return False
+  # It is an end state! Record winner before returning
+  most_survival = sorted(state.brains, reverse=True,
+          key = lambda x: (x.iterations_survived, x.robots_alive, x.max_flag, x.total_flags))
+  if brains_alive == 1:
+    priority = (most_survival, most_flags)
+  else:
+    priority = (most_flags, most_survival)
+  rank = 1
+  for placement in range(2 * len(state.brains)):
+    brain_list = priority[placement % 2]
+    brain_index = placement // 2
+    brain = brain_list[brain_index]
+    if brain.placement == 0:
+      brain.placement = rank
+      rank += 1
+      # If the next one in the list was not a tie-breaker, add it too
+      for next_index in range(brain_index + 1, len(state.brains) - 1):
+        next_brain = brain_list[brain_index]
+        if (next_brain.max_flag == brain.max_flag and next_brain.iterations_survived == brain.iterations_survived and
+            next_brain.total_flags == brain.total_flags and next_brain.robots_alive == brain.robots_alive):
+          if next_brain.placement == 0:
+            rank += 1
+            next_brain.placement = brain.placement
+        else:
+          break
+  return True
 
 def next_iteration(state):
   record_moves_for_robots(state)
@@ -53,6 +80,7 @@ def next_iteration(state):
   handle_flags(state)
   charge_up(state)
   state.iteration += 1
+  record_statistics(state)
 
 def record_moves_for_robots(state):
   import roborally.api as api
@@ -237,12 +265,14 @@ def fire_laser(state, pos, direction):
       break
 
 def perform_random_damage(state):
-  if state.iteration >= 100 and state.iteration % 20 == 0:
-    damage_amount = (state.iteration - 100) / 20
+  if state.iteration >= RANDOM_DAMAGE_START and state.iteration % RANDOM_DAMAGE_CYCLE == 0:
+    damage_amount = (state.iteration - RANDOM_DAMAGE_START) / RANDOM_DAMAGE_CYCLE
     living_bots = []
     for cell, pos in state.board.traverse():
       if cell.content and cell.content[TYPE] == ROBOT:
-        living_bots.append(cell.content)
+        # Random damage prefers robots who have scored less flags
+        for i in range(6 - cell.content[FLAGS_SCORED]):
+          living_bots.append(cell.content)
     if living_bots:
       robot = random.choice(living_bots)
       robot[LIFE] -= damage_amount
@@ -284,6 +314,10 @@ def handle_flags(state):
       flag = int(cell.floor[len(FLAG):])
       if cell.content[FLAGS_SCORED] == flag - 1:
         cell.content[FLAGS_SCORED] += 1
+        cell.content[LIFE] += LIFE_GAIN_PER_FLAG
+        cell.content['brain'].total_flags += 1
+        if flag > cell.content['brain'].max_flag:
+          cell.content['brain'].max_flag = flag
 
 def charge_up(state):
   if state.iteration % 10 == 9:
@@ -291,7 +325,14 @@ def charge_up(state):
       if cell.content and cell.content[TYPE] == ROBOT:
         cell.content[CHARGES] += 1
 
+def record_statistics(state):
+  state.calculate_statistics()
+
 def record_death(content, method):
-  # TODO: different implementation
   if content[TYPE] == ROBOT:
-    print('{} died from {}'.format(content['brain'].name, method))
+    brain = content['brain']
+    if method not in brain.death_reason:
+      brain.death_reason[method] = 0
+    brain.death_reason[method] += 1
+    if config.interactive:
+      print('{} died from {}'.format(content['brain'].name, method))
