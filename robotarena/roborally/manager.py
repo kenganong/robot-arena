@@ -1,7 +1,6 @@
 import os
 import importlib.util
 import random
-import roborally.config as config
 import roborally.robots.hammer_bot as hammer_bot
 import roborally.robots.beeline as beeline
 from roborally.api import *
@@ -12,16 +11,15 @@ LIFE_GAIN_PER_FLAG = 10
 RANDOM_DAMAGE_START = 300
 RANDOM_DAMAGE_CYCLE = 30
 
-def create_start_state():
-  brains = load_brains()
-  with open(config.map_file) as board_file:
+def create_start_state(map_file, robots):
+  brains = load_brains(robots)
+  with open(map_file) as board_file:
     state = create_state(board_file, brains)
   return state
 
-def load_brains():
+def load_brains(robots):
   brains = []
   brains_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'robots')
-  robots = getattr(config, 'robots', None)
   if not robots:
     robots = [(file_name[:-3], file_name[:-3]) for file_name in os.listdir(brains_dir) if file_name.endswith('.py') and not file_name.startswith('__')]
   for bot in robots:
@@ -65,24 +63,24 @@ def end_state(state):
           break
   return True
 
-def next_iteration(state):
-  record_moves_for_robots(state)
-  perform_priority_moves(state)
-  handle_destroyed(state)
-  perform_laser_moves(state)
-  handle_destroyed(state)
-  perform_moves(state)
+def next_iteration(state, debug_robots, interactive):
+  record_moves_for_robots(state, debug_robots, interactive)
+  perform_priority_moves(state, interactive)
+  handle_destroyed(state, interactive)
+  perform_laser_moves(state, interactive)
+  handle_destroyed(state, interactive)
+  perform_moves(state, interactive)
   perform_spinners(state)
-  perform_lasers(state)
-  handle_destroyed(state)
-  perform_random_damage(state)
-  handle_destroyed(state)
+  perform_lasers(state, interactive)
+  handle_destroyed(state, interactive)
+  perform_random_damage(state, interactive)
+  handle_destroyed(state, interactive)
   handle_flags(state)
   charge_up(state)
   state.iteration += 1
   record_statistics(state)
 
-def record_moves_for_robots(state):
+def record_moves_for_robots(state, debug_robots, interactive):
   import roborally.api as api
   for cell, pos in state.board.traverse():
     if cell.content and cell.content[TYPE] == ROBOT:
@@ -91,11 +89,11 @@ def record_moves_for_robots(state):
       try:
         robot['move'] = robot['brain'].ai.move()
       except Exception as error:
-        if config.debug_robots:
+        if debug_robots:
           raise error
         robot[LIFE] -= 1
         if robot[LIFE] == 0:
-          record_death(robot, 'overheating')
+          record_death(robot, 'overheating', interactive)
         robot['move'] = LASER
       if robot['move'] not in MOVES:
         robot['move'] = LASER
@@ -152,7 +150,7 @@ def get_robot_sight(state, pos, robot):
     sight.append(sight_row)
   return sight
 
-def perform_priority_moves(state):
+def perform_priority_moves(state, interactive):
   to_move = [pos for cell, pos in state.board.traverse() if cell.content and cell.content[TYPE] == ROBOT
                 and cell.content['move'] in PRIORITY_MOVES]
   random.shuffle(to_move)
@@ -165,18 +163,18 @@ def perform_priority_moves(state):
       direction = turn_direction(robot[FACING], False)
     elif robot['move'] == SIDESTEP_RIGHT:
       direction = turn_direction(robot[FACING], True)
-    pos = perform_move_in_direction(state, pos, direction, to_move)
+    pos = perform_move_in_direction(state, pos, direction, to_move, interactive)
     if pos != None and robot['move'] == FORWARD_TWO:
-      pos = perform_move_in_direction(state, pos, direction, to_move)
+      pos = perform_move_in_direction(state, pos, direction, to_move, interactive)
     if pos != None:
       if robot[CHARGES] > 0:
         robot[CHARGES] -= 1
       else:
         robot[LIFE] -= 1
         if robot[LIFE] == 0:
-          record_death(robot, 'malfunction')
+          record_death(robot, 'malfunction', interactive)
 
-def perform_moves(state):
+def perform_moves(state, interactive):
   to_move = [cell.content for cell, pos in state.board.traverse() if cell.content and cell.content[TYPE] == ROBOT
                 and cell.content['move'] in [TURN_LEFT, TURN_RIGHT, U_TURN]]
   for robot in to_move:
@@ -191,7 +189,7 @@ def perform_moves(state):
       direction = robot[FACING]
     elif robot['move'] == REVERSE:
       direction = opposite_direction(robot[FACING])
-    perform_move_in_direction(state, pos, direction, to_move)
+    perform_move_in_direction(state, pos, direction, to_move, interactive)
 
 def perform_spinners(state):
   to_move = [cell for cell, pos in state.board.traverse() if cell.content and cell.content[TYPE] == ROBOT
@@ -209,12 +207,12 @@ def perform_turn(robot, turn):
     elif turn == TURN_RIGHT:
       robot[FACING] = turn_direction(robot[FACING], True)
 
-def perform_move_in_direction(state, pos, direction, other_positions):
+def perform_move_in_direction(state, pos, direction, other_positions, interactive):
   pos_in_front = get_pos_in_direction(pos, direction)
   in_front = state.get_content(pos_in_front)
   # First push anything in front of this robot
   if in_front and (in_front[TYPE] == ROBOT or in_front[TYPE] == CORPSE):
-    new_pos = perform_move_in_direction(state, pos_in_front, direction, other_positions)
+    new_pos = perform_move_in_direction(state, pos_in_front, direction, other_positions, interactive)
     # Update the other_positions list with the new position
     if new_pos == None:
       try:
@@ -239,20 +237,20 @@ def perform_move_in_direction(state, pos, direction, other_positions):
       cell.content = robot
       return pos_in_front
     else:
-      record_death(robot, 'falling')
+      record_death(robot, 'falling', interactive)
       return None
 
-def perform_laser_moves(state):
+def perform_laser_moves(state, interactive):
   for cell, pos in state.board.traverse():
     if cell.content and cell.content[TYPE] == ROBOT and cell.content['move'] == LASER:
-      fire_laser(state, pos, cell.content[FACING])
+      fire_laser(state, pos, cell.content[FACING], interactive)
 
-def perform_lasers(state):
+def perform_lasers(state, interactive):
   for cell, pos in state.board.traverse():
     if cell.content and cell.content[TYPE] in [ROBOT, MOUNTED_LASER]:
-      fire_laser(state, pos, cell.content[FACING])
+      fire_laser(state, pos, cell.content[FACING], interactive)
 
-def fire_laser(state, pos, direction):
+def fire_laser(state, pos, direction, interactive):
   while True:
     pos = get_pos_in_direction(pos, direction)
     cell = state.board.get_item(pos)
@@ -261,10 +259,10 @@ def fire_laser(state, pos, direction):
     elif cell.content:
       cell.content[LIFE] -= 1
       if cell.content[LIFE] == 0:
-        record_death(cell.content, 'lasers')
+        record_death(cell.content, 'lasers', interactive)
       break
 
-def perform_random_damage(state):
+def perform_random_damage(state, interactive):
   if state.iteration >= RANDOM_DAMAGE_START and state.iteration % RANDOM_DAMAGE_CYCLE == 0:
     damage_amount = (state.iteration - RANDOM_DAMAGE_START) / RANDOM_DAMAGE_CYCLE
     living_bots = []
@@ -277,22 +275,22 @@ def perform_random_damage(state):
       robot = random.choice(living_bots)
       robot[LIFE] -= damage_amount
       if robot[LIFE] < 0:
-        record_death(robot, 'random damage')
+        record_death(robot, 'random damage', interactive)
 
-def handle_destroyed(state):
+def handle_destroyed(state, interactive):
   to_fill_with_corpses = []
   chain = []
   for cell, pos in state.board.traverse():
-    perform_destruction(state, pos, cell, to_fill_with_corpses, chain)
+    perform_destruction(state, pos, cell, to_fill_with_corpses, chain, interactive)
   while len(chain) > 0:
     to_inspect = chain
     chain = []
     for pos, cell in to_inspect:
-      perform_destruction(state, pos, cell, to_fill_with_corpses, chain)
+      perform_destruction(state, pos, cell, to_fill_with_corpses, chain, interactive)
   for cell in to_fill_with_corpses:
     cell.content = make_corpse()
 
-def perform_destruction(state, pos, cell, to_fill_with_corpses, chain):
+def perform_destruction(state, pos, cell, to_fill_with_corpses, chain, interactive):
   if cell.content and cell.content[LIFE] <= 0:
     previous_content = cell.content
     cell.content = None
@@ -303,7 +301,7 @@ def perform_destruction(state, pos, cell, to_fill_with_corpses, chain):
         if adjacent_cell and adjacent_cell.content:
           adjacent_cell.content[LIFE] -= 1
           if adjacent_cell.content[LIFE] == 0:
-            record_death(adjacent_cell.content, 'explosions')
+            record_death(adjacent_cell.content, 'explosions', interactive)
           chain.append((adjacent_pos, adjacent_cell))
     elif previous_content[TYPE] == ROBOT:
       to_fill_with_corpses.append(cell)
@@ -328,11 +326,11 @@ def charge_up(state):
 def record_statistics(state):
   state.calculate_statistics()
 
-def record_death(content, method):
+def record_death(content, method, interactive):
   if content[TYPE] == ROBOT:
     brain = content['brain']
     if method not in brain.death_reason:
       brain.death_reason[method] = 0
     brain.death_reason[method] += 1
-    if config.interactive:
+    if interactive:
       print('{} died from {}'.format(content['brain'].name, method))

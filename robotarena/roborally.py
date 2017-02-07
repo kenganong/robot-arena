@@ -1,8 +1,17 @@
+import sys
 import os
+import importlib.util
 import copy
 import pickle
-import roborally.config as config
 import roborally.manager as manager
+
+# Load the config file
+if len(sys.argv) < 2:
+  import roborally.config as config
+else:
+  spec = importlib.util.spec_from_file_location('config', sys.argv[1])
+  config = importlib.util.module_from_spec(spec)
+  spec.loader.exec_module(config)
 
 if config.save_replay:
   replay = []
@@ -21,10 +30,10 @@ def log_results(state):
       print('{}. {}  with {} flags (scored: {})  surviving {} iterations ({} robots left)'.format(brain.placement,
             brain.name, brain.max_flag, brain.total_flags, brain.iterations_survived, brain.robots_alive))
 
-state = manager.create_start_state()
+state = manager.create_start_state(config.map_file, getattr(config, 'robots', None))
 while not manager.end_state(state):
   log_state(state)
-  manager.next_iteration(state)
+  manager.next_iteration(state, config.debug_robots, config.interactive)
 log_state(state)
 log_results(state)
 
