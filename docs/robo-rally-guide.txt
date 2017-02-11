@@ -1,0 +1,45 @@
+Programmer's Guide:
+  To program you AI and test your code, you will need Python 3. The version on my machine is Python 3.5.2.
+  
+  Create a python file (like my_robot.py) and drop it in the 'roborally/robots' directory. Your file should look like:
+    from roborally.api import *
+    def move():
+      # Your AI code here
+      # return one of the moves from the MOVES list
+
+  The API (at roborally.api) contains a bunch of helpful functions for writing your bot. The most important function
+  here is sight() which will give you everything your robot currently knows. All the other functions in the API are
+  helper functions to process that information. The API is heavily documented and you can either read the code, or use
+  pydoc to read through my documentation. On my system, I type:
+    pydoc3 roborally/api.py
+
+  Once you've written some of your AI code, you'll want to test it! In order to run simulations of the arena, run
+  roborally.py while in the robotarena directory. To do this with the default configuration, you would use the
+  following command:
+    python3 roborally.py
+
+  Most likely, you'll want to create your own config file so you can test different scenarios. To do this, you would:
+    cp roborally/config.py ./my_config.py
+    vim my_config.py    (or whatever text editor you like to use)
+    python3 roborally.py my_config.py
+
+  The comments in the config file should guide your edits, but I will suggest two in particular:
+    1. debug_bots = True
+       This will make the game exit with a stacktrace if a bot raises an exception. Good for debugging your AI.
+    2. iteractive = True  OR  save_replay = True
+       If you want to see what your robots are doing iteration-by-iteration, one of these configurations is essential.
+  The default configuration will use every module in the roborally/robots as an AI in the game with crappy names on a
+  rather normal map. As you test your robot, you'll probably want to customize which map to use and which robots are
+  included.
+
+  If you've chosen to use the save_replay configuration, every execution of roborally.py will create a pickle file with
+  a copy of every iteration encountered during the game. By executing the create_web_replay.py script, the contents of
+  this pickle file will be used to create HTML pages for every iteration of the game so that you can watch a visual
+  replay of what went down in robot town.
+    python3 create_web_replay.py roborally/replays/<replay_name>.pickle
+    Open common/replays/<replay_name>.html in your browser of choice.
+
+  If you discover any bugs in the game or would like to suggest an enhancement (such as a new function in the api),
+  you can submit pull requests on github and/or email me about it.
+
+  Once you are happy with your AI, remember to submit your code with a pithy name and description of its strategy.

@@ -1,8 +1,6 @@
 import os
 import importlib.util
 import random
-import roborally.robots.hammer_bot as hammer_bot
-import roborally.robots.beeline as beeline
 from roborally.api import *
 from roborally.game_state import *
 
