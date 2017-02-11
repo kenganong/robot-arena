@@ -3,11 +3,13 @@ import os
 import pickle
 import roborally.api as api
 
-replay_name = 'my_test'
 image_dir = '../images/'
 
 with open(sys.argv[1], 'rb') as pickle_file:
-  states = pickle.load(pickle_file)
+  replay = pickle.load(pickle_file)
+  replay_name = replay['name']
+  replay_type = replay['type']
+  states = replay['states']
 
 os.makedirs('common/replay/{}'.format(replay_name), exist_ok=True)
 
@@ -18,7 +20,7 @@ def make_start_page(robot_name_to_img):
   image_dir = 'images/'
   with open('common/replay/{}.html'.format(replay_name), 'w') as file:
     print('<html><body><div style="text-align:center">', end='', file=file)
-    print('<h1>Robot Arena</h1><br/><h2>RoboRally</h2><br />', file=file)
+    print('<h1>Robot Arena</h1><br/><h2>{}</h2><br />'.format(replay_type), file=file)
     print('<a href="{}/iteration_0.html">Start</a><br/><br/>'.format(replay_name), end='', file=file)
     print('<table cellpadding="0" cellspacing="0" style="margin:0 auto">', file=file)
     print('<caption>Contestants</caption><tr><th>Robot</th><th>Name</th></tr>', file=file)
