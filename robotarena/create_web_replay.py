@@ -1,10 +1,12 @@
+import sys
 import os
 import pickle
 import roborally.api as api
 
 replay_name = 'my_test'
+image_dir = '../images/'
 
-with open('roborally/replays/{}.pickle'.format(replay_name), 'rb') as pickle_file:
+with open(sys.argv[1], 'rb') as pickle_file:
   states = pickle.load(pickle_file)
 
 os.makedirs('common/replay/{}'.format(replay_name), exist_ok=True)
@@ -12,9 +14,38 @@ os.makedirs('common/replay/{}'.format(replay_name), exist_ok=True)
 def create_robot_image_map(state):
   return {state.brains[i].name: 'robot_{}.gif'.format(i + 1) for i in range(len(state.brains))}
 
-def make_start_page():
+def make_start_page(robot_name_to_img):
+  image_dir = 'images/'
   with open('common/replay/{}.html'.format(replay_name), 'w') as file:
-    print('<html><body><a href="{}/iteration_0.html">Start</a></body></html>'.format(replay_name), end='', file=file)
+    print('<html><body><div style="text-align:center">', end='', file=file)
+    print('<h1>Robot Arena</h1><br/><h2>RoboRally</h2><br />', file=file)
+    print('<a href="{}/iteration_0.html">Start</a><br/><br/>'.format(replay_name), end='', file=file)
+    print('<table cellpadding="0" cellspacing="0" style="margin:0 auto">', file=file)
+    print('<caption>Contestants</caption><tr><th>Robot</th><th>Name</th></tr>', file=file)
+    for name in robot_name_to_img:
+      image = image_dir + robot_name_to_img[name]
+      print('<tr><td><image src="{}"></td><td>{}</td></tr>'.format(image, name), end='', file=file)
+    print('</table>', file=file)
+    print('</div></body></html>', file=file)
+
+def make_end_page(final_results, robot_name_to_img):
+  with open('common/replay/{}/final.html'.format(replay_name), 'w') as file:
+    print('<html><body><div style="text-align:center">', end='', file=file)
+    print('<h1>Final Results</h1><br/>', file=file)
+    print('<table style="margin:0 auto;border: 1px solid black">', file=file)
+    print('<caption>Rankings</caption><tr>', file=file)
+    for title in ['Rank', 'Robot', 'Name', 'Max Flag Scored', 'Total Flags Scored', 'Iterations Survived', 'Robots Alive']:
+      print('<th style="border: 1px solid black">{}</th>'.format(title), end='', file=file)
+    print('</tr>', file=file)
+    for brain in sorted(final_results.brains, key = lambda x: x.placement):
+      image = image_dir + robot_name_to_img[brain.name]
+      print('<tr>', end='', file=file)
+      for item in [brain.placement, '<image src="{}"/>'.format(image), brain.name, brain.max_flag,
+                   brain.total_flags, brain.iterations_survived, brain.robots_alive]:
+        print('<td style="border: 1px solid black">{}</td>'.format(item), end='', file=file)
+      print('</tr>', file=file)
+    print('</table>', file=file)
+    print('</div></body></html>', file=file)
 
 def make_iteration_page(state, total_states, robot_name_to_img):
   with open('common/replay/{}/iteration_{}.html'.format(replay_name, state.iteration), 'w') as state_file:
@@ -27,8 +58,12 @@ def make_iteration_page(state, total_states, robot_name_to_img):
     print('<body><div style="width:100%">', end='', file=state_file)
     if state.iteration > 0:
       print('<div style="float:left"><a href="iteration_{}.html">Previous</a></div>'.format(state.iteration - 1), end='', file=state_file)
+    else:
+      print('<div style="float:left"><a href="../{}.html">Start</a></div>'.format(replay_name), end='', file=state_file)
     if state.iteration < total_states - 1:
       print('<div style="float:right"><a href="iteration_{}.html">Next</a></div>'.format(state.iteration + 1), end='', file=state_file)
+    else:
+      print('<div style="float:right"><a href="final.html">Results</a></div>', end='', file=state_file)
     print('</div>', file=state_file)
     print('<div style="clear:both">', file=state_file)
     print('<h1>Iteration {}</h1>'.format(state.iteration), file=state_file)
@@ -45,7 +80,6 @@ def make_iteration_page(state, total_states, robot_name_to_img):
     print('</body></html>', file=state_file)
 
 def print_legend_and_charts(state, robot_name_to_img, state_file):
-  image_dir = '../images/'
   print('<div style="width:100%;display:inline-block">', end='', file=state_file)
   print('<table cellpadding="0" cellspacing="0" style="height:216;float:left">', file=state_file)
   print('<caption>Legend</caption><tr><th>Robot</th><th>Name</th></tr>', file=state_file)
@@ -115,7 +149,6 @@ def make_death_chart(state):
   return retval
 
 def make_table_cell(cell, robot_name_to_img):
-  image_dir = '../images/'
   style = None
   style_map = {api.AHEAD: None, api.RIGHT: 'rotateimg90', api.BEHIND: 'rotateimg180', api.LEFT: 'rotateimg270'}
   if cell.content:
@@ -146,8 +179,9 @@ def make_table_cell(cell, robot_name_to_img):
   else:
     return '<td><image src="{}"></td>'.format(image_dir + image)
 
-make_start_page()
 total_states = len(states)
 robot_name_to_img = create_robot_image_map(states[0])
+make_start_page(robot_name_to_img)
 for state in states:
   make_iteration_page(state, total_states, robot_name_to_img)
+make_end_page(states[-1], robot_name_to_img)
