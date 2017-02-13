@@ -11,6 +11,8 @@ interactive = False
 print_results = False
 # When debug_robots is set to True, a robot's move function that throws an exception will stop the simulation and print
 # the exception to the screen. This is useful for debugging.
+# When debug_robots is set to 'interactive' (with the quotes), an exception will pause the simulation and drob you to
+# a pdb (python debugger) terminal. Ctrl-d to exit, and the exception will then be printed.
 # When debug_robots is set to False, a robot that throws an exception will be dealt 1 damage, and will not stop the
 # simulation. The official match will have debug_robots set to False.
 debug_robots = False
