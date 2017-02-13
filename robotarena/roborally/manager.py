@@ -88,6 +88,9 @@ def record_moves_for_robots(state, debug_robots, interactive):
         robot['move'] = robot['brain'].ai.move()
       except Exception as error:
         if debug_robots:
+          if debug_robots == 'interactive':
+            import pdb
+            pdb.set_trace()
           raise error
         robot[LIFE] -= 1
         if robot[LIFE] == 0:
