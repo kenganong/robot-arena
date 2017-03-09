@@ -2,6 +2,7 @@
 import sys
 import os
 import pickle
+from PIL import Image
 import roborally.api as api
 
 image_dir = '../images/'
@@ -70,14 +71,9 @@ def make_iteration_page(state, total_states, robot_name_to_img):
     print('</div>', file=state_file)
     print('<div style="clear:both">', file=state_file)
     print('<h1>Iteration {}</h1>'.format(state.iteration), file=state_file)
-    print('<br/><table cellpadding="0" cellspacing="0">', file=state_file)
-    for row in range(state.board.rows):
-      print('<tr>', end='', file=state_file)
-      for col in range(state.board.cols):
-        cell = state.board.get_item((row, col))
-        print(make_table_cell(cell, robot_name_to_img), end='', file=state_file)
-      print('</tr>', file=state_file)
-    print('</table>', file=state_file)
+    image_file = 'iteration_{}.gif'.format(state.iteration)
+    make_iteration_image(state).save('common/replay/{}/{}'.format(replay_name, image_file))
+    print('<br/><image src="{}"/>'.format(image_file), file=state_file)
     print('</div>', file=state_file)
     print_legend_and_charts(state, robot_name_to_img, state_file)
     print('</body></html>', file=state_file)
@@ -151,6 +147,51 @@ def make_death_chart(state):
   retval += ']\n}); });</script>'
   return retval
 
+cached_images = {}
+image_rotation = {}
+def cache_images(brains):
+  image_dir = 'common/replay/images/'
+  cached_images['pit'] = Image.open(image_dir + 'pit.gif')
+  cached_images[api.WALL] = Image.open(image_dir + 'wall.gif')
+  cached_images[api.CORPSE] = Image.open(image_dir + 'corpse.gif')
+  cached_images[api.MOUNTED_LASER] = Image.open(image_dir + 'mounted.gif')
+  cached_images[api.LEFT_SPINNER] = Image.open(image_dir + 'spinner.gif')
+  cached_images[api.RIGHT_SPINNER] = cached_images[api.LEFT_SPINNER].rotate(180)
+  cached_images[api.EMPTY] = Image.open(image_dir + 'floor.gif')
+  for i in range(1, 9):
+    cached_images[api.FLAG + str(i)] = Image.open(image_dir + api.FLAG + str(i) + '.gif')
+  for i in range(len(brains)):
+    cached_images[brains[i].name] = Image.open(image_dir + 'robot_{}.gif'.format(i + 1))
+  image_rotation[api.AHEAD] = 0
+  image_rotation[api.BEHIND] = 180
+  image_rotation[api.LEFT] = 90
+  image_rotation[api.RIGHT] = 270
+
+def make_iteration_image(state):
+  pixel_size = 9
+  image = Image.new('RGB', (state.board.cols * pixel_size, state.board.rows * pixel_size))
+  for row in range(state.board.rows):
+    for col in range(state.board.cols):
+      cell_image = get_cell_image(state.board.get_item((row, col)))
+      image.paste(cell_image, (col * pixel_size, row * pixel_size))
+  return image
+
+def get_cell_image(cell):
+  if cell.content:
+    if cell.content[api.TYPE] == api.ROBOT:
+      image = cached_images[cell.content['brain'].name]
+    else:
+      image = cached_images[cell.content[api.TYPE]]
+    rotation = image_rotation[cell.content.get(api.FACING, api.AHEAD)]
+    if rotation != 0:
+      image = image.rotate(rotation)
+  else:
+    if cell.floor == None:
+      image = cached_images['pit']
+    else:
+      image = cached_images[cell.floor]
+  return image
+
 def make_table_cell(cell, robot_name_to_img):
   style = None
   style_map = {api.AHEAD: None, api.RIGHT: 'rotateimg90', api.BEHIND: 'rotateimg180', api.LEFT: 'rotateimg270'}
@@ -184,6 +225,7 @@ def make_table_cell(cell, robot_name_to_img):
 
 total_states = len(states)
 robot_name_to_img = create_robot_image_map(states[0])
+cache_images(states[0].brains)
 make_start_page(robot_name_to_img)
 for state in states:
   make_iteration_page(state, total_states, robot_name_to_img)
