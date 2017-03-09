@@ -19,13 +19,13 @@ def load_brains(robots):
   brains = []
   brains_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'robots')
   if not robots:
-    robots = [(file_name[:-3], file_name[:-3]) for file_name in os.listdir(brains_dir) if file_name.endswith('.py') and not file_name.startswith('__')]
+    robots = [file_name[:-3] for file_name in os.listdir(brains_dir) if file_name.endswith('.py') and not file_name.startswith('__')]
   for bot in robots:
-    module_path = os.path.join(brains_dir, bot[1] + '.py')
-    spec = importlib.util.spec_from_file_location(bot[1], module_path)
+    module_path = os.path.join(brains_dir, bot + '.py')
+    spec = importlib.util.spec_from_file_location(bot, module_path)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
-    brains.append(Brain(bot[0], module))
+    brains.append(Brain(module.name, module))
   return brains
 
 def end_state(state):

@@ -1,6 +1,8 @@
 import random
 from roborally.api import *
 
+name = 'HammerBot'
+
 def move():
   my_memory = memory()
   if 'move' not in my_memory:

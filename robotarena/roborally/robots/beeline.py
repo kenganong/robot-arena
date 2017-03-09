@@ -1,6 +1,8 @@
 import random
 from roborally.api import *
 
+name = 'Beeline'
+
 def move():
   if charges() > 0:
     possible_moves = NORMAL_MOVES + PRIORITY_MOVES

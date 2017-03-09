@@ -3,6 +3,7 @@ Programmer's Guide:
   
   Create a python file (like my_robot.py) and drop it in the 'roborally/robots' directory. Your file should look like:
     from roborally.api import *
+    name = 'PithyName' # The pithy name for your robot
     def move():
       # Your AI code here
       # return one of the moves from the MOVES list
@@ -42,4 +43,4 @@ Programmer's Guide:
   If you discover any bugs in the game or would like to suggest an enhancement (such as a new function in the api),
   you can submit pull requests on github and/or email me about it.
 
-  Once you are happy with your AI, remember to submit your code with a pithy name and description of its strategy.
+  Once you are happy with your AI, remember to submit your code with a description of its strategy.

@@ -16,10 +16,8 @@ print_results = False
 # When debug_robots is set to False, a robot that throws an exception will be dealt 1 damage, and will not stop the
 # simulation. The official match will have debug_robots set to False.
 debug_robots = False
-# A list containing the robots to include in the game. Each element in the list is a tuple containing the robot's pithy
-# name used in the simulation and the name of the python module.
-# For example, if you wrote a robot with the file roborally/robots/my_robot.py and you want the pithy name of your
-# robot in the game to be MyRobot, you would add to this list, ('MyRobot', 'my_robot')
+# A list containing the robots to include in the game. Each element in the list is name of the python module
+# containing the robot's ai.
+# For example, if you wrote a robot with the file roborally/robots/my_robot.py, you would add to this list, 'my_robot'
 # If this is commented out, every module in the roborally/robots directory will be used as a robot.
-#robots = [('HammerBot', 'hammer_bot'), ('Beeline', 'beeline'),
-#          ('ScaredyCat', 'scaredycat'), ('McShooterson', 'mcshooterson')]
+#robots = ['hammer_bot', 'beeline', 'scaredycat', 'mcshooterson']

@@ -1,6 +1,8 @@
 import random
 from roborally.api import *
 
+name = 'McShooterson'
+
 def move():
   hits_robot = []
   hits_non_robot = []

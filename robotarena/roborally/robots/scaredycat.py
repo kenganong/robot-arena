@@ -1,6 +1,8 @@
 import random
 from roborally.api import *
 
+name = 'ScaredyCat'
+
 def move():
   my_moves = list(MOVES)
   scored_moves = {}
